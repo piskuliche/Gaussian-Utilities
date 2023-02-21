@@ -19,8 +19,7 @@ def gen_header(nproc, oldchk, chk, mem):
 
 def grab_trans(state=1):
     flag = 0
-    s = []
-    f = []
+    trans = []
     with open('vert_exc/vert_exc.log','r') as f:
         lines = f.readlines()
         for line in lines:
@@ -31,29 +30,23 @@ def grab_trans(state=1):
                 else:
                     flag=0
             if flag == 1 and "->" in line:
-                vals = line.strip().split()
-                s1 = vals[0]
-                s2 = vals[2]
-                f1 = float(vals[3])
-                s.append(s1)
-                s.append(s2)
-                f.append(f1)
-                print(line.strip())
-    return np.unique(s), f
+                trans.append(line)
+    return trans
             
             
 
 
 
-def gen_all_ntos(nstates=6, functional="B3LYP", basis="6-31(d,p)", dispersion=1,
+def gen_all_ntos(functional="B3LYP", basis="6-31(d,p)", dispersion=1,
                     solvent="Methanol", charge=0, multiplicity=1, nproc=28, mem=100):
     """This generates a set of ntos calculations for each transition"""
 
     num_trans = 0
-    s, f = grab_trans(state=1)
-    for i in range(len(s)):    
+    trans = grab_trans(state=1)
+    for i in range(len(trans)):    
         header = gen_header(nproc, "../../vert_exc/vert_exc.chk", "state_%d.chk"%(i+1), mem)
-        os.makedirs("ntos/%d"%i,exist_ok=True)
+        os.makedirs("ntos/%d"%(i+1),exist_ok=True)
+        gen_sub_script(solvent=solvent, nproc=nproc, state=i+1)
         with open("ntos/%d/state_%d.gjf"%(i+1,i+1),"w") as f:
             for line in header:
                 f.write(line+"\n")
@@ -66,6 +59,7 @@ def gen_all_ntos(nstates=6, functional="B3LYP", basis="6-31(d,p)", dispersion=1,
             f.write("\n")
             f.write("%d %d\n" % (charge, multiplicity))
             f.write("\n")
+    gen_automate(len(trans))
 
 def gen_sub_script(solvent,nproc=28,state=1):
     with open("ntos/%d/sub_ntos.sh"%state,"w") as f:
@@ -95,14 +89,15 @@ def gen_automate(ns):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", default='exc_solv.chk', help="Input Checkpoint File")
     parser.add_argument('-basis', type=str, default="6-31(d,p)", help='Basis set to use [default: 6-31(d,p)]')
     parser.add_argument('-functional', type=str, default="B3LYP", help='Functional to use [default: B3LYP]')
     parser.add_argument('-dispersion', type=int, default=1, help='Use dispersion? [0] No [1] Yes')
     parser.add_argument('-charge', type=int, default=0, help='Charge of the molecule [default: 0]')
     parser.add_argument('-multiplicity', type=int, default=1, help='Multiplicity of the molecule [default: 1]')
-    parser.add_argument('-nstates', type=int, default=6, help='Number of states to calculate [default: 6]')
     parser.add_argument('-nproc', type=int, default=28, help='Number of processors to use [default: 28]')
     parser.add_argument('-mem', type=int, default=100, help='Memory to use in GB [default: 100]')
     parser.add_argument('-solvent', type=str, default="Methanol", help='Solvent to use [default: Methanol]')
     args = parser.parse_args()
+
+    gen_all_ntos(functional=args.functional, basis=args.basis, dispersion=args.dispersion,
+                    solvent=args.solvent, charge=args.charge, multiplicity=args.multiplicity, nproc=args.nproc, mem=args.mem)
