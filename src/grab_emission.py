@@ -20,22 +20,23 @@ def grab_spectra(logfile):
     intensity = np.array([])
     with open(logfile,'r') as f:
         lines = f.readlines()
-        spect_flag=1
+        spect_flag=0
         read_flag=0
         start_read =0
         for line in lines:
-            if "Final Spectrum" in line:
-                spect_flag = 1
             if len(line.strip().split()) == 2 and spect_flag == 1:
                 start_read = 1
                 vals = line.strip().split()
                 freq = np.append(freq,float(vals[0]))
-                intensity = np.append(intensity,float(vals[1]))
+                intensity = np.append(intensity,float(vals[1].replace("D","E")))
             if "----" in line and start_read == 1:
                 spect_flag = 0
                 start_read = 0
+            if "Final Spectrum" in line:
+                spect_flag = 1
             
     return freq, intensity
+
 
 
 if __name__ == "__main__":
@@ -44,3 +45,8 @@ if __name__ == "__main__":
     parser.add_argument("-f", type=str, default="band_shape.log", help="The band shape to grab the spectra for.")
     args = parser.parse_args()
     freq, I = grab_spectra(args.f)
+    np.savetxt("spectra.dat",np.column_stack((freq,I)),fmt="%10.5f",header="Frequency (cm^-1) Intensity (a.u.)")
+
+    import matplotlib.pyplot as plt
+    plt.plot(1E7/freq,I)
+    plt.show()
