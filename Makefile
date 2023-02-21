@@ -6,4 +6,5 @@ gauss:
 	rm $(bindir)/*
 	ln -s ${PWD}/src/gen_gaussian.py $(bindir)
 	ln -s ${PWD}/src/grab_gaussian.py $(bindir)
+	ln -s ${PWD}/src/gen_ntos.py $(bindir)
 	chmod 777 $(bindir)/*.py
